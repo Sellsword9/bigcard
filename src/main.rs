@@ -1,7 +1,11 @@
 use actix_web::{get, web, App, HttpServer, HttpResponse, Responder}; 
 use rand::Rng;
+use serde::Serialize;
+use std::collections::HashSet;
 // use actix_files::Files;
     
+
+#[derive(Serialize)]
 struct Card {
     suit: String,
     value: String,
@@ -10,49 +14,59 @@ struct Card {
 #[get("/randCard/{q}")]
 async fn rand_card(path: web::Path<i32>) -> impl Responder {
     let q: i32 = path.into_inner();
-    let response: String = if q < 0 || q > 52 {
-        "Invalid request number".to_string()
+    let response: Vec<Card> = if q < 0 || q > 52 {
+        let mut cards: Vec<Card> = Vec::new();
+        let card: Card = Card {
+            suit: "Invalid".to_string(),
+            value: "Invalid".to_string(),
+        };
+        cards.push(card);
+        cards
     } else {
         let mut cards: Vec<Card> = Vec::new();
-        for _ in 0..q {
-            let random: i32 = rand::thread_rng().gen_range(0..4);
-            let random2: i32 = rand::thread_rng().gen_range(0..13);
-            let suit: String = match random {
-                0 => "Hearts".to_string(),
-                1 => "Diamonds".to_string(),
-                2 => "Clubs".to_string(),
-                3 => "Spades".to_string(),
-                _ => "Invalid suit".to_string(),
+        let mut unique_cards: HashSet<String> = HashSet::new();
+        while cards.len() < q as usize {
+            let random_suit: i32 = rand::thread_rng().gen_range(0..4);
+            let random_value: i32 = rand::thread_rng().gen_range(0..13);
+        
+            let suit: &str = match random_suit {
+                0 => "Hearts",
+                1 => "Diamonds",
+                2 => "Clubs",
+                3 => "Spades",
+                _ => "Invalid suit",
             };
-            let value: String = match random2 {
-                0 => "Ace".to_string(),
-                1 => "2".to_string(),
-                2 => "3".to_string(),
-                3 => "4".to_string(),
-                4 => "5".to_string(),
-                5 => "6".to_string(),
-                6 => "7".to_string(),
-                7 => "8".to_string(),
-                8 => "9".to_string(),
-                9 => "10".to_string(),
-                10 => "Jack".to_string(),
-                11 => "Queen".to_string(),
-                12 => "King".to_string(),
-                _ => "Invalid value".to_string(),
+
+            let value: &str = match random_value {
+                0 => "Ace",
+                1 => "2",
+                2 => "3",
+                3 => "4",
+                4 => "5",
+                5 => "6",
+                6 => "7",
+                7 => "8",
+                8 => "9",
+                9 => "10",
+                10 => "Jack",
+                11 => "Queen",
+                12 => "King",
+                _ => "Invalid value",
             };
-            let card: Card = Card {
-                suit: suit,
-                value: value,
-            };
+
+            let card_string = format!("{}{}", suit, value);
+
+            if unique_cards.insert(card_string.clone()) {
+                let card: Card = Card {
+                    suit: suit.to_string(),
+                    value: value.to_string(),
+                };
             cards.push(card);
-        }
-        let mut response: String = String::new();
-        for card in cards {
-            response.push_str(&format!("{} of {}\n", card.value, card.suit));
-        }
-        response
+            }
+    }
+    cards
     };
-    HttpResponse::Ok().body(response)
+    HttpResponse::Ok().json(response)
 }
 
 /* ENDPOINTS END */
